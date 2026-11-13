@@ -1,0 +1,32 @@
+# Example config: CRM contacts -> sheet rows. Secrets come from env vars, never from this file.
+source:
+  base_url: http://127.0.0.1:8701
+  endpoint: /contacts
+  auth: {header: Authorization, prefix: "Bearer ", env: CRM_TOKEN}
+  id_field: id
+  updated_field: updated_at        # cursor field; only records newer than the last run are pulled
+  since_param: updated_since
+  page_param: page
+  per_page_param: per_page
+  per_page: 2
+  data_key: data
+  next_key: next_page
+target:
+  base_url: http://127.0.0.1:8702
+  endpoint: /rows
+  auth: {header: X-Api-Key, env: SHEET_KEY}
+  external_id_field: crm_id        # upsert key: lookup by this field decides create vs update
+  lookup_param: crm_id
+  row_id_field: id
+  update_method: PATCH
+mapping:
+  - {to: crm_id, from: id, required: true}
+  - {to: full_name, concat: [first_name, last_name], sep: " "}
+  - {to: email, from: email, required: true}
+  - {to: status, from: status, enum: {A: Active, I: Inactive}}
+  - {to: signup_date, from: created, date: {in: "%Y-%m-%d", out: "%d/%m/%Y"}}
+  - {to: phone, from: phone, default: "n/a"}
+  - {to: source, default: crm-sync}
+retry: {max_attempts: 5, base_delay: 0.5, max_delay: 30}
+state_file: state.json
+runs_dir: runs
