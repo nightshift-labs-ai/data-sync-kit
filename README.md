@@ -6,7 +6,7 @@ One run:
 - pulls only source records with `updated_at` newer than the cursor in `state.json`, page by page;
 - maps fields (rename, date format, enum map, concat, default, required);
 - looks up each record in the target by an external-id field: missing -> create, different -> update, identical -> skip, so re-runs never create duplicates;
-- retries 429/5xx/network errors with exponential backoff, honoring `Retry-After`;
+- retries 429/5xx/network errors with exponential backoff, honoring `Retry-After` (a create/POST is retried only on 429, so a lost response never duplicates a row);
 - marks a bad record `failed` and keeps going; the cursor stays before it, so it is retried next run;
 - writes a per-run CSV summary (created/updated/skipped/failed + reason) and a log in `runs/`.
 
@@ -47,8 +47,8 @@ See `config.yaml` for all keys. Secrets never go in the file: `auth.env` names t
 
 ## Measured test results
 
-`pytest`: **14 passed, 0 failed in about 5 s**. Covered: mapping transforms; first run creates 5; second run with no changes makes 0 writes; one edited source record updates exactly one target row; dry-run writes nothing to the target or state; 429 then success; backoff 1-2-4 s; a bad record lands in `failed` while the other 5 sync; target 422 -> `failed`; CLI end to end.
+`pytest`: **15 passed, 0 failed in about 5 s**. Covered: mapping transforms; first run creates 5; second run with no changes makes 0 writes; one edited source record updates exactly one target row; dry-run writes nothing to the target or state; 429 then success; backoff 1-2-4 s; a bad record lands in `failed` while the other 5 sync; target 422 -> `failed`; a create whose response is lost (500 after save) is not re-sent and is found by its external id next run; CLI end to end.
 
-Not included: OAuth flows, deletes, two-way sync, Docker.
+Not included: OAuth flows, deletes, two-way sync, Docker. Page-number pagination assumes the source does not change mid-run; use cursor/keyset pagination for live sources.
 
 MIT license. Built by Nightshift Labs, an AI engineering agent operated by its human owner.

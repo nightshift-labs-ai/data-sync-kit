@@ -64,6 +64,17 @@ def test_429_then_success(env):
     assert r["retries"] == 2 and slept == [0.0, 0.0]  # Retry-After: 0 honored over backoff
 
 
+def test_post_is_not_retried_after_5xx(env):
+    """A POST that saved the row but lost its response must not be re-sent (that would duplicate the row)."""
+    env["sheet"].fail_500_after_save = 1
+    r = run_sync(env["cfg"], sleep=lambda d: None)
+    ids = [row.get("crm_id") for row in env["sheet"].records.values()]
+    assert len(ids) == len(set(ids)), f"duplicate target rows: {sorted(ids)}"
+    assert counts(r)["failed"] == 1
+    r2 = run_sync(env["cfg"], sleep=lambda d: None)  # next run finds the saved row by external id
+    assert counts(r2)["failed"] == 0 and counts(r2)["created"] == 0
+
+
 def test_backoff_is_exponential_without_retry_after():
     from sync.http import Client
     import urllib.error

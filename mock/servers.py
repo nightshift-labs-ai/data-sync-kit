@@ -32,6 +32,7 @@ def seed_contacts():
 class MockServer:
     def __init__(self, kind, port=0, fail_429=0, records=None):
         self.kind, self.fail_429, self.lock = kind, fail_429, threading.Lock()
+        self.fail_500_after_save = 0  # test hook: save the row, then answer 500 (lost response)
         self.records = records if records is not None else (seed_contacts() if kind == "crm" else {})
         self.requests = []
         self.httpd = ThreadingHTTPServer(("127.0.0.1", port), self._handler())
@@ -115,6 +116,9 @@ class MockServer:
                 with srv.lock:
                     rid = max(srv.records, default=0) + 1
                     srv.records[rid] = dict(row, id=rid)
+                    if srv.fail_500_after_save > 0:
+                        srv.fail_500_after_save -= 1
+                        return self._send(500, {"error": "saved, but the response was lost"})
                 self._send(201, srv.records[rid])
 
             def do_PATCH(self):

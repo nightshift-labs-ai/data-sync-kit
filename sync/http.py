@@ -43,12 +43,14 @@ class Client:
                     return json.loads(raw) if raw else None
             except urllib.error.HTTPError as e:
                 status, text, retry_after = e.code, e.read().decode(errors="replace"), e.headers.get("Retry-After")
-                if status not in RETRY_STATUSES or attempt == self.max_attempts:
+                # POST is not idempotent: after a 5xx the row may already be saved, so only 429 is retried.
+                retryable = status == 429 if method == "POST" else status in RETRY_STATUSES
+                if not retryable or attempt == self.max_attempts:
                     raise HttpError(status, text)
-            except urllib.error.URLError as e:
-                if attempt == self.max_attempts:
+            except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+                if method == "POST" or attempt == self.max_attempts:
                     raise
-                status, retry_after = f"network error ({e.reason})", None
+                status, retry_after = f"network error ({getattr(e, 'reason', e)})", None
             delay = min(self.base_delay * 2 ** (attempt - 1), self.max_delay)
             if retry_after:
                 try:
