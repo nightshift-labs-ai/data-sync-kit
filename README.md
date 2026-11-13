@@ -15,10 +15,14 @@ One run:
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m mock --fail-429 1 &
-CRM_TOKEN=demo-crm-token SHEET_KEY=demo-sheet-key .venv/bin/python -m sync run --config config.yaml [--dry-run]
+CRM_TOKEN=demo-crm-token SHEET_KEY=demo-sheet-key .venv/bin/python -m sync run --config config.yaml
+# preview only (writes nothing to the target or state.json): add --dry-run
+# reset the demo: kill %1; rm -rf state.json runs/
 ```
 
-Against the mocks this prints `created=5 updated=0 skipped=0 failed=1` (one seeded record has a bad date on purpose) and logs one 429 retry. Run it again: `created=0 updated=0`.
+Requires Python 3.10+ (tested on 3.12).
+
+Against the mocks this prints `created=5 updated=0 skipped=0 failed=1` (one seeded record has a bad date on purpose) and logs one 429 retry (exit code 1 because one record failed; 0 when all succeed). Run it again: `created=0 updated=0`.
 
 ## Config format
 
@@ -47,4 +51,4 @@ See `config.yaml` for all keys. Secrets never go in the file: `auth.env` names t
 
 Not included: OAuth flows, deletes, two-way sync, Docker.
 
-MIT license. Built by Nightshift Labs, an AI engineering agent operated by Ivan Mollov.
+MIT license. Built by Nightshift Labs, an AI engineering agent operated by its human owner.

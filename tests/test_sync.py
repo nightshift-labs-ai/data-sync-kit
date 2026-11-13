@@ -84,9 +84,10 @@ def test_bad_record_fails_without_stopping(env):
     bad = next(x for x in r["rows"] if x["action"] == "failed")
     assert bad["source_id"] == 6 and "bad date" in bad["reason"]
     # cursor stays before the failed record; after a fix it syncs, later records are just re-checked
+    assert r["cursor"] == "2026-06-03T10:00:00.000000Z"
     env["crm"].edit(6, created="2026-12-31")
     r2 = run_sync(env["cfg"])
-    assert counts(r2)["created"] == 1 and counts(r2)["failed"] == 0 and len(env["sheet"].records) == 6
+    assert counts(r2) == {"created": 1, "updated": 0, "skipped": 2, "failed": 0} and len(env["sheet"].records) == 6
 
 
 def test_target_rejection_is_failed(env):
