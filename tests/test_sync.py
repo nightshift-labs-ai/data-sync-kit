@@ -118,3 +118,16 @@ def test_cli_end_to_end(env):
     e.pop("SHEET_KEY")
     out = subprocess.run(cmd, capture_output=True, text=True, env=e, cwd=ROOT)
     assert out.returncode != 0 and "SHEET_KEY" in out.stderr
+
+
+def test_post_network_error_is_a_record_failure_not_retried():
+    """A POST that hits a network error is not re-sent and surfaces as HttpError (the engine marks that record failed)."""
+    from sync.http import Client, HttpError
+    slept = []
+    c = Client("http://127.0.0.1:9", max_attempts=4, base_delay=1, sleep=slept.append, timeout=1)
+    try:
+        c.request("POST", "/rows", body={"x": 1})
+        raised = None
+    except Exception as e:  # noqa: BLE001
+        raised = e
+    assert isinstance(raised, HttpError) and slept == []

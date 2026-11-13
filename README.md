@@ -47,7 +47,7 @@ See `config.yaml` for all keys. Secrets never go in the file: `auth.env` names t
 
 ## Measured test results
 
-`pytest`: **15 passed, 0 failed in about 5 s**. Covered: mapping transforms; first run creates 5; second run with no changes makes 0 writes; one edited source record updates exactly one target row; dry-run writes nothing to the target or state; 429 then success; backoff 1-2-4 s; a bad record lands in `failed` while the other 5 sync; target 422 -> `failed`; a create whose response is lost (500 after save) is not re-sent and is found by its external id next run; CLI end to end.
+`pytest`: **16 passed, 0 failed in about 5 s**. Covered: mapping transforms; first run creates 5; second run with no changes makes 0 writes; one edited source record updates exactly one target row; dry-run writes nothing to the target or state; 429 then success; backoff 1-2-4 s; a bad record lands in `failed` while the other 5 sync; target 422 -> `failed`; a create whose response is lost (500 after save) is not re-sent and is found by its external id next run; CLI end to end.
 
 Not included: OAuth flows, deletes, two-way sync, Docker. Page-number pagination assumes the source does not change mid-run; use cursor/keyset pagination for live sources.
 

@@ -48,7 +48,9 @@ class Client:
                 if not retryable or attempt == self.max_attempts:
                     raise HttpError(status, text)
             except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
-                if method == "POST" or attempt == self.max_attempts:
+                if method == "POST":  # not re-sent (may be saved); report it as this record's failure
+                    raise HttpError(0, f"network error on POST, not retried: {getattr(e, 'reason', e)}")
+                if attempt == self.max_attempts:
                     raise
                 status, retry_after = f"network error ({getattr(e, 'reason', e)})", None
             delay = min(self.base_delay * 2 ** (attempt - 1), self.max_delay)
